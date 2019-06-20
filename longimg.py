@@ -106,7 +106,7 @@ def addFrameToVideo(videoWriter, frames: list):
 	for i, frame in enumerate(frames):
 		videoWriter.write(toCv2(frame))
 
-def getFrameVideo(long_img: Image.Image, ratio: float, PerMove: int, PerFragment: int, fps: int, finalwait: int, path: str):
+def getFrameVideo(long_img: Image.Image, ratio: float, PerMove: int, PerFragment: int, fps: int, beginwait: int, finalwait: int, path: str):
 	'''
 	分批次处理帧切片和视频
 
@@ -123,6 +123,12 @@ def getFrameVideo(long_img: Image.Image, ratio: float, PerMove: int, PerFragment
 	videoWriter = cv2.VideoWriter(path, fourcc, fps, (frame_width, frame_height))
 	
 	print("All Frame Count: ", FrameCnt)
+	print("Final Duration:  %.2fs\n" % ((FrameCnt + beginwait + finalwait) / fps))
+
+	# 视频开始等待的帧数
+	print("Handle Begining Frame: All for %d" % beginwait)
+	for i in range(beginwait):
+		addFrameToVideo(videoWriter, getFrame(long_img, PerMove, frame_width, frame_height, 0, 1))
 
 	# 总批次数，向上取整，超过部分在 getFrame 判断
 	batch = math.ceil(FrameCnt / PerFragment)
@@ -142,27 +148,63 @@ def getFrameVideo(long_img: Image.Image, ratio: float, PerMove: int, PerFragment
 	# 释放资源
 	videoWriter.release()
 
-def checkFileExist(filtpath):
+def checkFileExist(filepath):
 	'''
 	判断文件是否存在
 	'''
 	if os.path.exists(filepath):
-		op = input("\nThe file %s exists, cover it? (y/n): " % filename)
+		op = input("\nThe file %s has existed, cover it? (y/n): " % filepath)
 		while not (op == "n" or op == "y"):
-			op = input("Wrong option, the file exists, cover it? (y/n): ")
+			op = input("Wrong option, the file has existed, cover it? (y/n): ")
 		if op == "n":
 			exit(1)
 
-if __name__ == "__main__":
+def getArgv() -> (str, str, float, int, int, int, int, str):
+	'''
+	获得系统参数
+	'''
 	dir = sys.argv[1] # 图片所在文件夹
 	ext = sys.argv[2] # 图片的后缀名
-	ratio = float(sys.argv[3]) / float(sys.argv[4]) # 分辨率 16 9 / 4 3
-	fps = int(sys.argv[5]) # 帧数 30 / 60
-	finalwait = int(sys.argv[6]) # 最后的等待时间
-	filename = sys.argv[7] # 保存文件名，不带后缀都指定为 avi
 
-	# 保存的文件名
-	filepath = "%s%s%s.avi" % (dir, os.path.sep, filename)
+	radioW = int(sys.argv[3])
+	radioH = int(sys.argv[4])
+	ratio = float(radioW) / float(radioH) # 分辨率 16 9 / 4 3
+	
+	fps = int(sys.argv[5]) # 帧数 30 / 60
+
+	PerMove = int(sys.argv[6]) # 每一帧对应移动长图多少像素
+
+	beginwait = int(sys.argv[7]) # 开始的等待时间
+	finalwait = int(sys.argv[8]) # 最后的等待时间
+
+	filename = sys.argv[9] # 保存文件名，不带后缀都指定为 avi
+	filepath = "%s%s%s.avi" % (dir, os.path.sep, filename) # 保存的文件名
+
+	print('''
+Setting:
+Images Directory: {}*.{}
+Frame Ratio: {}:{}, FPS: {}, Pixel Move: {}, 
+Begin Wait:{}, Final Wait: {}
+Save FileName: {}
+Video Duration: See After \
+'''
+	.format(dir + os.path.sep, ext,
+			radioW, radioH, fps, PerMove,
+			beginwait, finalwait,
+			filepath))
+
+	op = input("\nContinue? (y/n): ")
+	while not (op == "n" or op == "y"):
+		op = input("Wrong option, continue? (y/n): ")
+	if op == "n":
+		exit(1)
+
+	return dir, ext, ratio, fps, PerMove, beginwait, finalwait, filepath
+
+if __name__ == "__main__":
+
+	dir, ext, ratio, fps, PerMove, beginwait, finalwait, filepath = getArgv()
+	
 	# 判断文件是否存在
 	checkFileExist(filepath)
 
@@ -173,14 +215,14 @@ if __name__ == "__main__":
 	print("> Transform to Long Image Finish\n")
 
 	# 每一帧在长图中的移动像素数 和 每一批次处理的帧数
-	PerMove = 2
+	# PerMove = 1
 	PerFragment = 200 # 别设置太高，机子内存承受不住
 
 	### 获取每一帧以及插入视频 ###
 	print("> Get Frames and Add to Video Start")
 	video = getFrameVideo(long_img=long_img, ratio=ratio,
-		PerMove=PerMove, PerFragment=PerFragment, fps=fps, finalwait=finalwait, path=filepath)
+		PerMove=PerMove, PerFragment=PerFragment, fps=fps, beginwait=beginwait, finalwait=finalwait, path=filepath)
 	print("> Get Frames and Add to Video Finish\n")
 	print("> Find Your Video in \"%s\"" % filepath)
 	
-# python longimg.py "E:\Gal Files\CIRCUS\DC4\AdvData\GRP\ED\ED" png 16 9 60 100 final
+# python longimg.py "E:\Gal Files\CIRCUS\DC4\AdvData\GRP\ED\ED" png 16 9 60 1 50 100 final

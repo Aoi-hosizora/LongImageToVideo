@@ -9,9 +9,9 @@
 ### Run
 ```python
 # python longimg.py 
-#	<Img folder> <Extension> <Resolution> <Waiting frame> <Save filename>
+#	<Img_folder> <Extension> <Resolution: W H> <FPS> <PixelMove> <Frame: Begining Waiting> <Save filename>
 
-python longimg.py "E:\Gal Files\CIRCUS\DC4\AdvData\GRP\ED\ED" png 16 9 60 100 final
+python longimg.py "xxxxxx\ED" png 16 9 60 1 50 100 final
 ```
 
 ### Screenshot
