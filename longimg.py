@@ -1,7 +1,6 @@
 import os
 import sys
 from PIL import Image
-import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 import math
